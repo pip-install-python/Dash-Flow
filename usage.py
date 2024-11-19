@@ -15,6 +15,7 @@ initial_nodes = [
         'data': {
             'label': html.Div([
                 html.Img(src="https://avatars.githubusercontent.com/u/120129682?v=4", style={'width': '100%', 'height': '100%'}),
+
             ], style={
                 'display': 'flex',
                 'flexDirection': 'column',
@@ -31,7 +32,7 @@ initial_nodes = [
     },
     {
         'id': '2',
-        'data': {'label': '🧑🏽‍💻 Code Dev..'},
+        'data': {'label': 'Animated Node'},
         'position': {'x': 100, 'y': 125},
         'style': {
             'background': '#ff0073',
@@ -72,10 +73,23 @@ initial_edges = [
     {
         'id': 'e1-2',
         'source': '1',
+        'target': '2',
+        'type': 'animated',
+        'data': {
+            'animatedNode': '2'
+        },
+        'style': {
+            'strokeWidth': 2,
+            'stroke': '#555'
+        }
+    },
+    {
+        'id': 'e2-3',
+        'source': '2',
         'target': '3',
         'type': 'animated',
         'data': {
-            'animatedNode': '2'  # This specifies which node should animate along the edge
+            'animatedNode': '2'
         },
         'style': {
             'strokeWidth': 2,
@@ -90,7 +104,6 @@ app.layout = dmc.MantineProvider([
         nodes=initial_nodes,
         edges=initial_edges,
         showDevTools=True,
-        showBackground=True,
         style={'height': '600px'}
     )
 ])
@@ -102,7 +115,6 @@ app.layout = dmc.MantineProvider([
 )
 def update_nodes(nodes):
     return nodes or initial_nodes
-
 
 if __name__ == '__main__':
     app.run_server(debug=True, port=7777)
