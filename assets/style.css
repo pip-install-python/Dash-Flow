@@ -1,0 +1,18 @@
+/* Add this to your CSS */
+.react-flow__node {
+    transition: none !important;  /* Disable default transitions */
+}
+
+.animated-edge {
+    stroke-dasharray: 5;
+    animation: flowAnimation 1s linear infinite;
+}
+
+@keyframes flowAnimation {
+    from {
+        stroke-dashoffset: 10;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}

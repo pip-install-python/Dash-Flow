@@ -1,0 +1,13 @@
+Package: dashFlow
+Title: A Dash component library for creating interactive node-based interfaces with React Flow
+Version: 0.0.1
+Description: A Dash component library for creating interactive node-based interfaces with React Flow
+Depends: R (>= 3.0.2)
+Imports: 
+Suggests: 
+License: MIT + file LICENSE
+URL: https://github.com/pip-install-python/dash-flow
+BugReports: https://github.com/pip-install-python/dash-flow/issues
+Encoding: UTF-8
+LazyData: true
+KeepSource: true
