@@ -3,10 +3,12 @@ module DashFlow
 using Dash
 
 const resources_path = realpath(joinpath( @__DIR__, "..", "deps"))
-const version = "0.0.1"
+const version = "0.0.2"
 
+include("jl/df_animatedcirclenode.jl")
 include("jl/df_animatednodeedge.jl")
 include("jl/df_dashflow.jl")
+include("jl/df_devtools.jl")
 include("jl/df_resizablenode.jl")
 
 function __init__()

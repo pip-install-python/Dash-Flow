@@ -1,78 +1,39 @@
-import React, { useCallback } from 'react';
+// DashFlow.react.js
+import React, { useCallback, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import {
     ReactFlow,
     Controls,
     MiniMap,
     Background,
-    addEdge,
     ReactFlowProvider,
-    applyNodeChanges,
-    applyEdgeChanges,
+    useNodesState,
+    useEdgesState,
     useViewport,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import ELK from 'elkjs/lib/elk.bundled.js';
 
 import ResizableNode from './ResizableNode';
+import AnimatedCircleNode from './AnimatedCircleNode';
 import DevTools from './DevTools';
 import AnimatedNodeEdge from './AnimatedNodeEdge';
 
+// Initialize ELK
+const elk = new ELK();
+
+// Node types definition
+const nodeTypes = {
+    resizable: ResizableNode,
+    circle: AnimatedCircleNode,
+};
+
+// Edge types definition
 const edgeTypes = {
     animated: AnimatedNodeEdge,
 };
 
-const nodeTypes = {
-    resizable: ResizableNode,
-};
-
-
-/**
- * Recursively process Dash component children
- */
-const processDashElement = (element) => {
-    // Handle string/number
-    if (typeof element === 'string' || typeof element === 'number') {
-        return element;
-    }
-
-    // Skip null/undefined
-    if (!element) {
-        return null;
-    }
-
-    // Handle arrays of children
-    if (Array.isArray(element)) {
-        return element.map(child => processDashElement(child));
-    }
-
-    // Handle Dash components
-    if (element.props && element.props._dashprivate_layout) {
-        const { props } = element.props._dashprivate_layout;
-
-        // Process children recursively
-        const children = processDashElement(props.children);
-
-        // Create React element
-        return React.createElement(
-            props.type || 'div',
-            {
-                ...props,
-                key: props.key || undefined,
-                style: {
-                    ...props.style,
-                }
-            },
-            children
-        );
-    }
-
-    // Return unprocessed element if nothing else matches
-    return element;
-};
-
-/**
- * Convert Dash components in node data to React elements
- */
+// Process Dash components
 const processDashComponents = (nodes) => {
     if (!nodes) return [];
 
@@ -81,8 +42,6 @@ const processDashComponents = (nodes) => {
 
         if (component.props && component.props._dashprivate_layout) {
             const layout = component.props._dashprivate_layout;
-
-            // Process children recursively
             const processedChildren = Array.isArray(layout.props.children)
                 ? layout.props.children.map(processComponent)
                 : layout.props.children;
@@ -115,109 +74,128 @@ const processDashComponents = (nodes) => {
         };
     });
 };
-/**
- * DashFlow is a Dash component that wraps React Flow to create
- * interactive node-based interfaces. It supports customizable nodes,
- * edges, and various interaction modes.
- */
-const Flow = (props) => {
-    const {
-        id,
-        nodes,
-        edges,
-        nodesDraggable,
-        nodesConnectable,
-        elementsSelectable,
-        nodeTypes: customNodeTypes,
-        edgeTypes,
-        showMiniMap,
-        showControls,
-        showBackground,
-        showDevTools,
-        style,
-        className,
-        setProps
-    } = props;
 
-    const allEdgeTypes = {
-        ...edgeTypes,
-        ...(props.edgeTypes || {}),
+const FlowWithProvider = (props) => {
+    const [nodes, setNodes, onNodesChange] = useNodesState(props.nodes);
+    const [edges, setEdges, onEdgesChange] = useEdgesState(props.edges);
+    const { setViewport } = useViewport();
+
+    const applyLayout = async (options) => {
+        if (!options) return;
+
+        try {
+            const layoutOptions = JSON.parse(options);
+            const graph = {
+                id: 'root',
+                layoutOptions: layoutOptions,
+                children: nodes.map(node => {
+                    // Special handling for circle nodes and animated nodes
+                    const isCircleNode = node.type === 'circle' || edges.some(edge =>
+                        edge.type === 'animated' && edge.data?.animatedNode === node.id
+                    );
+
+                    if (isCircleNode) {
+                        return {
+                            id: node.id,
+                            width: 60,
+                            height: 60,
+                            ...node,
+                        };
+                    }
+
+                    return {
+                        id: node.id,
+                        width: node.style?.width || 150,
+                        height: node.style?.height || 50,
+                        ...node
+                    };
+                }),
+                edges: edges.map(edge => ({
+                    id: edge.id,
+                    sources: [edge.source],
+                    targets: [edge.target],
+                    ...edge
+                }))
+            };
+
+            const layout = await elk.layout(graph);
+
+            const layoutedNodes = layout.children.map((node) => {
+                // Get the original node to preserve special properties
+                const originalNode = nodes.find(n => n.id === node.id);
+
+                return {
+                    ...originalNode,
+                    ...node,
+                    position: { x: node.x, y: node.y },
+                    style: originalNode.style,
+                };
+            });
+
+            setNodes(layoutedNodes);
+            props.setProps({ nodes: layoutedNodes });
+        } catch (error) {
+            console.error('Layout error:', error);
+        }
     };
 
-    const allNodeTypes = {
-        ...nodeTypes,
-        ...customNodeTypes,
-    };
+    useEffect(() => {
+        if (props.layoutOptions) {
+            applyLayout(props.layoutOptions);
+        }
+    }, [props.layoutOptions]);
 
-    // Process nodes to handle Dash components
-    const processedNodes = processDashComponents(nodes);
-    const viewport = useViewport();
+    useEffect(() => {
+        if (props.nodes !== nodes) {
+            props.setProps({ nodes });
+        }
+    }, [nodes]);
 
-    const onNodesChange = useCallback((changes) => {
-        // Use applyNodeChanges helper from React Flow to correctly update nodes
-        const nextNodes = applyNodeChanges(changes, nodes);
-        setProps({ nodes: nextNodes });
-    }, [nodes, setProps]);
+    useEffect(() => {
+        if (props.edges !== edges) {
+            props.setProps({ edges });
+        }
+    }, [edges]);
 
-    const onEdgesChange = useCallback((changes) => {
-        // Use applyEdgeChanges helper from React Flow to correctly update edges
-        const nextEdges = applyEdgeChanges(changes, edges);
-        setProps({ edges: nextEdges });
-    }, [edges, setProps]);
+    const onConnect = useCallback((params) => {
+        const newEdge = { ...params, id: `e${params.source}-${params.target}` };
+        setEdges((eds) => [...eds, newEdge]);
+        props.setProps({ edges: [...edges, newEdge] });
+    }, [edges, setEdges]);
 
-    const onConnect = useCallback((connection) => {
-        if (!connection.source || !connection.target) return;
-        const newEdge = {
-            id: `e${connection.source}-${connection.target}`,
-            ...connection
-        };
-        setProps({ edges: [...edges, newEdge] });
-    }, [edges, setProps]);
-
-    // Default container style with mandatory height
-    const containerStyle = {
-        width: '100%',
-        height: '600px',  // Set a default height
-        ...style
-    };
+    const processedNodes = useMemo(() => processDashComponents(nodes), [nodes]);
 
     return (
-        <div id={id} style={containerStyle} className={className}>
+        <div style={{ width: '100%', height: '600px', ...props.style }}>
             <ReactFlow
                 nodes={processedNodes}
                 edges={edges}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
-                nodesDraggable={nodesDraggable}
-                nodesConnectable={nodesConnectable}
-                elementsSelectable={elementsSelectable}
-                nodeTypes={allNodeTypes}
+                nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
+                nodesDraggable={props.nodesDraggable}
+                nodesConnectable={props.nodesConnectable}
+                elementsSelectable={props.elementsSelectable}
                 fitView
-                deleteKeyCode={['Backspace', 'Delete']}
-                panOnScroll
-                selectionOnDrag
-                panOnDrag={[1, 2]}
-                zoomOnScroll
-                snapToGrid
             >
-                {showControls && <Controls />}
-                {showMiniMap && <MiniMap />}
-                {showBackground && <Background />}
-                {showDevTools && <DevTools viewport={viewport} nodes={processedNodes} />}
+                {props.showControls && <Controls />}
+                {props.showMiniMap && <MiniMap />}
+                {props.showBackground && <Background />}
+                {props.showDevTools && <DevTools viewport={useViewport()} nodes={processedNodes} />}
             </ReactFlow>
         </div>
     );
 };
 
-
-// Main component that wraps Flow with ReactFlowProvider
 const DashFlow = (props) => {
     return (
-        <ReactFlowProvider>
-            <Flow {...props} />
-        </ReactFlowProvider>
+        <div id={props.id}>
+            <ReactFlowProvider>
+                <FlowWithProvider {...props} />
+            </ReactFlowProvider>
+        </div>
     );
 };
 
@@ -233,7 +211,7 @@ DashFlow.defaultProps = {
     style: {},
     className: '',
     showDevTools: false,
-
+    layoutOptions: null,
 };
 
 DashFlow.propTypes = {
@@ -243,93 +221,87 @@ DashFlow.propTypes = {
     id: PropTypes.string,
 
     /**
-     * Array of node objects with position, data, and optional style information
+     * Enable/disable node dragging behavior
+     */
+    nodesDraggable: PropTypes.bool,
+
+    /**
+     * Enable/disable the ability to make new connections between nodes
+     */
+    nodesConnectable: PropTypes.bool,
+
+    /**
+     * Enable/disable the ability to select elements
+     */
+    elementsSelectable: PropTypes.bool,
+
+    /**
+     * Show/hide the minimap navigation component
+     */
+    showMiniMap: PropTypes.bool,
+
+    /**
+     * Show/hide the control panel
+     */
+    showControls: PropTypes.bool,
+
+    /**
+     * Show/hide the background pattern
+     */
+    showBackground: PropTypes.bool,
+
+    /**
+     * Array of nodes to display in the flow
      */
     nodes: PropTypes.arrayOf(PropTypes.shape({
         id: PropTypes.string.isRequired,
+        type: PropTypes.string,
+        data: PropTypes.object.isRequired,
         position: PropTypes.shape({
             x: PropTypes.number.isRequired,
             y: PropTypes.number.isRequired
         }).isRequired,
-        data: PropTypes.object.isRequired,
-        type: PropTypes.string,
         style: PropTypes.object
     })),
 
     /**
-     * Array of edge objects defining connections between nodes
+     * Array of edges defining connections between nodes
      */
     edges: PropTypes.arrayOf(PropTypes.shape({
         id: PropTypes.string.isRequired,
         source: PropTypes.string.isRequired,
         target: PropTypes.string.isRequired,
         type: PropTypes.string,
-        animated: PropTypes.bool,
+        data: PropTypes.object,
         style: PropTypes.object
     })),
 
     /**
-     * Enable/disable node dragging
-     */
-    nodesDraggable: PropTypes.bool,
-
-    /**
-     * Enable/disable creating new connections
-     */
-    nodesConnectable: PropTypes.bool,
-
-    /**
-     * Enable/disable selection
-     */
-    elementsSelectable: PropTypes.bool,
-
-    /**
-     * Custom node type components
-     */
-    nodeTypes: PropTypes.object,
-
-    /**
-     * Custom edge type components
-     */
-    edgeTypes: PropTypes.object,
-
-    /**
-     * Show/hide minimap
-     */
-    showMiniMap: PropTypes.bool,
-
-    /**
-     * Show/hide controls
-     */
-    showControls: PropTypes.bool,
-
-    /**
-     * Show/hide background
-     */
-    showBackground: PropTypes.bool,
-
-    /**
-     * Custom style for the container div
+     * Custom CSS styles for the container div
      */
     style: PropTypes.object,
 
     /**
-     * Custom CSS class name
+     * CSS class name for the container div
      */
     className: PropTypes.string,
 
     /**
-     * Dash-assigned callback that should be called to report property changes
-     * to Dash, to make them available for callbacks.
-     */
-    setProps: PropTypes.func,
-    /**
-     * Show/hide developer tools
+     * Show/hide the developer tools panel
      */
     showDevTools: PropTypes.bool,
+
+    /**
+     * Layout options for arranging nodes using the ELK layout engine
+     */
+    layoutOptions: PropTypes.string,
+
+    /**
+     * Dash-assigned callback that should be called to report property changes
+     */
+    setProps: PropTypes.func
 };
 
-// Add this to register the component name
 DashFlow.displayName = 'DashFlow';
 
 export default DashFlow;

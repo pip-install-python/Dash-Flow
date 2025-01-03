@@ -2,7 +2,7 @@
 name = "DashFlow"
 uuid = "1b08a953-4be3-4667-9a23-427fab79db12"
 authors = ["Pip Install Python <pipinstallpython@gmail.com>"]
-version = "0.0.1"
+version = "0.0.2"
 
 [deps]
 Dash = "1b08a953-4be3-4667-9a23-3db579824955"

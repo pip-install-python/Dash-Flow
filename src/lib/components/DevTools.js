@@ -1,5 +1,6 @@
 // src/lib/components/DevTools.js
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Panel } from '@xyflow/react';
 
 const ViewportLogger = ({ viewport }) => (
@@ -22,6 +23,9 @@ const NodeInspector = ({ nodes }) => (
     </div>
 );
 
+/**
+ * DevTools component for displaying debug information about the flow
+ */
 const DevTools = ({ viewport, nodes }) => {
     return (
         <Panel position="top-right" style={{ maxHeight: '400px', overflow: 'auto' }}>
@@ -30,5 +34,26 @@ const DevTools = ({ viewport, nodes }) => {
         </Panel>
     );
 };
+
+DevTools.propTypes = {
+    /**
+     * Current viewport information including position and zoom level
+     */
+    viewport: PropTypes.shape({
+        x: PropTypes.number.isRequired,
+        y: PropTypes.number.isRequired,
+        zoom: PropTypes.number.isRequired
+    }).isRequired,
+
+    /**
+     * Array of nodes to display information about
+     */
+    nodes: PropTypes.arrayOf(PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        type: PropTypes.string
+    })).isRequired
+};
+
+DevTools.displayName = 'DevTools';
 
 export default DevTools;

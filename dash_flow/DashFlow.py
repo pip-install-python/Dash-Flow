@@ -13,13 +13,10 @@ Keyword arguments:
     The ID used to identify this component in Dash callbacks.
 
 - className (string; default ''):
-    Custom CSS class name.
-
-- edgeTypes (dict; optional):
-    Custom edge type components.
+    CSS class name for the container div.
 
 - edges (list of dicts; optional):
-    Array of edge objects defining connections between nodes.
+    Array of edges defining connections between nodes.
 
     `edges` is a list of dicts with keys:
 
@@ -31,23 +28,26 @@ Keyword arguments:
 
     - type (string; optional)
 
-    - animated (boolean; optional)
+    - data (dict; optional)
 
     - style (dict; optional)
 
 - elementsSelectable (boolean; default True):
-    Enable/disable selection.
+    Enable/disable the ability to select elements.
 
-- nodeTypes (dict; optional):
-    Custom node type components.
+- layoutOptions (string; optional):
+    Layout options for arranging nodes using the ELK layout engine.
 
 - nodes (list of dicts; optional):
-    Array of node objects with position, data, and optional style
-    information.
+    Array of nodes to display in the flow.
 
     `nodes` is a list of dicts with keys:
 
     - id (string; required)
+
+    - type (string; optional)
+
+    - data (dict; required)
 
     - position (dict; required)
 
@@ -57,41 +57,37 @@ Keyword arguments:
 
         - y (number; required)
 
-    - data (dict; required)
-
-    - type (string; optional)
-
     - style (dict; optional)
 
 - nodesConnectable (boolean; default True):
-    Enable/disable creating new connections.
+    Enable/disable the ability to make new connections between nodes.
 
 - nodesDraggable (boolean; default True):
-    Enable/disable node dragging.
+    Enable/disable node dragging behavior.
 
 - showBackground (boolean; default True):
-    Show/hide background.
+    Show/hide the background pattern.
 
 - showControls (boolean; default True):
-    Show/hide controls.
+    Show/hide the control panel.
 
 - showDevTools (boolean; default False):
-    Show/hide developer tools.
+    Show/hide the developer tools panel.
 
 - showMiniMap (boolean; default True):
-    Show/hide minimap.
+    Show/hide the minimap navigation component.
 
 - style (dict; optional):
-    Custom style for the container div."""
+    Custom CSS styles for the container div."""
     _children_props = []
     _base_nodes = ['children']
     _namespace = 'dash_flow'
     _type = 'DashFlow'
     @_explicitize_args
-    def __init__(self, id=Component.UNDEFINED, nodes=Component.UNDEFINED, edges=Component.UNDEFINED, nodesDraggable=Component.UNDEFINED, nodesConnectable=Component.UNDEFINED, elementsSelectable=Component.UNDEFINED, nodeTypes=Component.UNDEFINED, edgeTypes=Component.UNDEFINED, showMiniMap=Component.UNDEFINED, showControls=Component.UNDEFINED, showBackground=Component.UNDEFINED, style=Component.UNDEFINED, className=Component.UNDEFINED, showDevTools=Component.UNDEFINED, **kwargs):
-        self._prop_names = ['id', 'className', 'edgeTypes', 'edges', 'elementsSelectable', 'nodeTypes', 'nodes', 'nodesConnectable', 'nodesDraggable', 'showBackground', 'showControls', 'showDevTools', 'showMiniMap', 'style']
+    def __init__(self, id=Component.UNDEFINED, nodesDraggable=Component.UNDEFINED, nodesConnectable=Component.UNDEFINED, elementsSelectable=Component.UNDEFINED, showMiniMap=Component.UNDEFINED, showControls=Component.UNDEFINED, showBackground=Component.UNDEFINED, nodes=Component.UNDEFINED, edges=Component.UNDEFINED, style=Component.UNDEFINED, className=Component.UNDEFINED, showDevTools=Component.UNDEFINED, layoutOptions=Component.UNDEFINED, **kwargs):
+        self._prop_names = ['id', 'className', 'edges', 'elementsSelectable', 'layoutOptions', 'nodes', 'nodesConnectable', 'nodesDraggable', 'showBackground', 'showControls', 'showDevTools', 'showMiniMap', 'style']
         self._valid_wildcard_attributes =            []
-        self.available_properties = ['id', 'className', 'edgeTypes', 'edges', 'elementsSelectable', 'nodeTypes', 'nodes', 'nodesConnectable', 'nodesDraggable', 'showBackground', 'showControls', 'showDevTools', 'showMiniMap', 'style']
+        self.available_properties = ['id', 'className', 'edges', 'elementsSelectable', 'layoutOptions', 'nodes', 'nodesConnectable', 'nodesDraggable', 'showBackground', 'showControls', 'showDevTools', 'showMiniMap', 'style']
         self.available_wildcard_properties =            []
         _explicit_args = kwargs.pop('_explicit_args')
         _locals = locals()

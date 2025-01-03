@@ -1,5 +1,7 @@
 # AUTO GENERATED FILE - DO NOT EDIT
 
+export(dfAnimatedCircleNode)
 export(dfAnimatedNodeEdge)
 export(dfDashFlow)
+export(dfDevTools)
 export(dfResizableNode)
